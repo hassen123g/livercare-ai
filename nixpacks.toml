@@ -1,4 +1,4 @@
- [phases.build]
+[phases.build]
 cmds = [
   "composer install --no-dev --optimize-autoloader",
   "npm install && npm run build",
@@ -7,7 +7,10 @@ cmds = [
 ]
 
 [phases.deploy]
-cmds = ["php artisan migrate --force"]
+cmds = [
+  "php artisan storage:link",
+  "php artisan migrate --force"
+]
 
 [start]
 cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
