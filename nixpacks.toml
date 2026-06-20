@@ -1,3 +1,6 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
 [phases.build]
 cmds = [
   "composer install --no-dev --optimize-autoloader",
@@ -11,4 +14,4 @@ cmds = [
 cmds = ["php artisan migrate --force"]
 
 [start]
-cmd = "python ai_models/predict.py & php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "python3 ai_models/predict.py & php artisan serve --host=0.0.0.0 --port=$PORT"
