@@ -2,15 +2,12 @@
 cmds = [
   "composer install --no-dev --optimize-autoloader",
   "npm install && npm run build",
-  "php artisan config:cache",
+"pip install flask tensorflow-cpu numpy pillow scikit-learn joblib",  "php artisan config:cache",
   "php artisan route:cache"
 ]
 
 [phases.deploy]
-cmds = [
-  "php artisan storage:link",
-  "php artisan migrate --force"
-]
+cmds = ["php artisan migrate --force"]
 
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "FLASK_PORT=5000 python ai_models/predict.py & php artisan serve --host=0.0.0.0 --port=$PORT"
