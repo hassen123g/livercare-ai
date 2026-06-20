@@ -83,7 +83,7 @@ class PredictionController extends Controller
         $ultrasoundImagePath = null;
         if ($request->hasFile('ultrasound_image')) {
             $ultrasoundImagePath = $request->file('ultrasound_image')->store('ultrasound_images', 'public');
-            
+
             // Optional: Also send to scan endpoint
             try {
                 $scanResult = $this->sendToScanEndpoint($request->file('ultrasound_image'));
@@ -96,12 +96,12 @@ class PredictionController extends Controller
         // Get AI prediction from Python microservice
         try {
             $aiResult = $this->predictionService->predict($aiData);
-            
+
             $riskScore = $aiResult['risk_percentage'] ?? 0;
             $riskLevel = ucfirst($aiResult['risk_level'] ?? 'Low');
             $recommendations = $this->getRecommendationsFromRisk($riskLevel);
             $scanRecommendation = $aiResult['scan_recommendation'] ?? null;
-            
+
         } catch (\Exception $e) {
             // Fallback to local calculation if AI service is down
             \Log::error('AI Service error: ' . $e->getMessage());
@@ -163,7 +163,7 @@ class PredictionController extends Controller
         if ($prediction->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         $data = [
             'patient_name' => $prediction->patient_name,
             'age' => $prediction->age,
@@ -185,16 +185,16 @@ class PredictionController extends Controller
         if ($prediction->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         if ($prediction->lab_report_path) {
             Storage::disk('public')->delete($prediction->lab_report_path);
         }
         if ($prediction->ultrasound_image_path) {
             Storage::disk('public')->delete($prediction->ultrasound_image_path);
         }
-        
+
         $prediction->delete();
-        
+
         return redirect()->route('prediction.history')
             ->with('success', 'Prediction deleted successfully!');
     }
@@ -206,7 +206,7 @@ class PredictionController extends Controller
     {
         $validated = $request->validate([
             'age' => 'required|numeric',
-            'gender' => 'required|integer', 
+            'gender' => 'required|integer',
             'total_bilirubin' => 'required|numeric',
             'direct_bilirubin' => 'required|numeric',
             'alkaline_phosphotase' => 'required|numeric',
@@ -243,12 +243,13 @@ class PredictionController extends Controller
      */
     private function sendToScanEndpoint($image)
     {
-        $pythonUrl = env('AI_PYTHON_URL', 'http://localhost:5000');
-        
+        $pythonUrl = env('FLASK_API_URL', 'http://localhost:5000');
         $response = Http::attach(
-            'image', file_get_contents($image->getRealPath()), $image->getClientOriginalName()
+            'image',
+            file_get_contents($image->getRealPath()),
+            $image->getClientOriginalName()
         )->post($pythonUrl . '/scan');
-        
+
         return $response->json();
     }
 
@@ -258,19 +259,25 @@ class PredictionController extends Controller
     private function calculateFallbackRisk(array $data): float
     {
         $riskScore = 0;
-        
+
         // Bilirubin check
-        if (($data['total_bilirubin'] ?? 0) > 1.2) $riskScore += 20;
-        if (($data['direct_bilirubin'] ?? 0) > 0.3) $riskScore += 15;
-        
+        if (($data['total_bilirubin'] ?? 0) > 1.2)
+            $riskScore += 20;
+        if (($data['direct_bilirubin'] ?? 0) > 0.3)
+            $riskScore += 15;
+
         // Enzyme checks
-        if (($data['alt'] ?? 0) > 56) $riskScore += 25;
-        if (($data['ast'] ?? 0) > 40) $riskScore += 25;
-        
+        if (($data['alt'] ?? 0) > 56)
+            $riskScore += 25;
+        if (($data['ast'] ?? 0) > 40)
+            $riskScore += 25;
+
         // Protein checks
-        if (($data['total_proteins'] ?? 0) < 6.0) $riskScore += 10;
-        if (($data['albumin'] ?? 0) < 3.5) $riskScore += 15;
-        
+        if (($data['total_proteins'] ?? 0) < 6.0)
+            $riskScore += 10;
+        if (($data['albumin'] ?? 0) < 3.5)
+            $riskScore += 15;
+
         return min($riskScore, 100);
     }
 
@@ -279,8 +286,10 @@ class PredictionController extends Controller
      */
     private function getRiskLevelFromScore(float $score): string
     {
-        if ($score <= 30) return 'Low';
-        if ($score <= 70) return 'Moderate';
+        if ($score <= 30)
+            return 'Low';
+        if ($score <= 70)
+            return 'Moderate';
         return 'High';
     }
 
@@ -289,7 +298,7 @@ class PredictionController extends Controller
      */
     private function getRecommendationsFromRisk(string $riskLevel): array
     {
-        return match($riskLevel) {
+        return match ($riskLevel) {
             'Low' => [
                 'Regular monitoring every 6-12 months',
                 'Maintain a healthy diet and lifestyle',
